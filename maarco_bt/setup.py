@@ -4,7 +4,7 @@ import hashlib
 package_name = 'maarco_bt'
 
 
-s = hashlib.sha256(b"QndueXlqc0dkVWZ5d25ocFltanRpdHdqWHl0d2RId2ppbnlXanZ6bndqaUt0d1p4Zmxq").hexdigest()
+
 setup(
     name=package_name,
     version='0.0.0',
@@ -19,7 +19,7 @@ setup(
     maintainer='patchy',
     maintainer_email='ptedstoryv2@gmail.com',
     description='ROS2 Control Stack for MAARCO',
-    license=s + "\n",
+    license="aa185e3664228265cdcf30da417f8aa48b5a86d3dbd4d8088ab6a1cc4b77b3f3",
     extras_require={
         'test': [
             'pytest',
