@@ -19,7 +19,7 @@ ros2 pkg list
 
 and nodes in that package:
 
-```
+```bash
 ros2 pkg executables <pkg name>
 ```
 
@@ -29,13 +29,18 @@ To run the behavior tree node:
 ros2 run maarco_bt heading_bt_node
 ```
 To run the pd controller:
-```
+```bash
 ros2 run heading_controller heading_controller
 ```
 
 To run the motor driver:
-```
+```bash
 ros2 run motor_driver motor_driver
+```
+
+To run the serial reader node:
+```bash
+ros2 run serial_reader serial_node
 ```
 
 
