@@ -1,7 +1,7 @@
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Float64, String
 from serial_interfaces.msg import SensorData
+from std_msgs.msg import Float64, Float64MultiArray, String
 from motor_interfaces.msg import PWM
 
 SCREW_MIDPOINT = 1500
@@ -22,7 +22,7 @@ class HeadingController(Node):
         self.create_subscription(SensorData, '/sensor_data', self.sensor_cb, 10)
         self.create_subscription(String, '/terrain_id', self.terrain_cb, 10)
         self.create_subscription(Float64, '/desired_yaw', self.desired_yaw_cb, 10)
-        self.create_subscription(Float64, '/pd_gains', self.gains_cb, 10)
+        self.create_subscription(Float64MultiArray, '/pd_gains', self.gains_cb, 10)
 
         self.publisher = self.create_publisher(PWM, '/motor_pwm', 10)
 
