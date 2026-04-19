@@ -22,3 +22,10 @@ and nodes in that package:
 ```
 ros2 pkg executables <pkg name>
 ```
+
+# Run Instructions
+To run the behavior tree node:
+```bash
+ros2 run maarco_bt heading_bt_node
+```
+
