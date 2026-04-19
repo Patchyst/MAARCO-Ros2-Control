@@ -5,3 +5,20 @@ Behavior tree for changing locomotion methods based on terrain identification. F
 # Behavior Tree
 <img width="1328" height="345" alt="image" src="https://github.com/user-attachments/assets/5c764ccd-6459-4c0a-9cf3-3f4670d723af" />
 
+# Build Instructions
+Clone the repo, place it in the `src` folder of a ros2 workspace. Then:
+```bash
+colcon build --symlink-install
+source install/setup.bash
+```
+
+Packages can be listed via
+```bash
+ros2 pkg list
+```
+
+and nodes in that package:
+
+```
+ros2 pkg executables <pkg name>
+```
