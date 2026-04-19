@@ -1,9 +1,15 @@
 import rclpy
 from rclpy.node import Node
-
+from std_msgs.msg import Float64, String
 from serial_interfaces.msg import SensorData
 from motor_interfaces.msg import PWM
 
+SCREW_MIDPOINT = 1500
+SCREW_HALF_RANGE = 250
+
+CRAB_MIDPOINT = 1300
+CRAB_HALF_RANGE = 200
+CRAB_RIGHT_CONSTANT = 1100
 
 class HeadingController(Node):
 
@@ -13,32 +19,20 @@ class HeadingController(Node):
         # -----------------------------
         # SUB / PUB
         # -----------------------------
-        self.subscription = self.create_subscription(
-            SensorData,
-            '/sensor_data',
-            self.callback,
-            10
-        )
+        self.create_subscription(SensorData, '/sensor_data', self.sensor_cb, 10)
+        self.create_subscription(String, '/terrain_id', self.terrain_cb, 10)
+        self.create_subscription(Float64, '/desired_yaw', self.desired_yaw_cb, 10)
+        self.create_subscription(Float64, '/pd_gains', self.gains_cb, 10)
 
-        self.publisher = self.create_publisher(
-            PWM,
-            '/motor_pwm',
-            10
-        )
+        self.publisher = self.create_publisher(PWM, '/motor_pwm', 10)
 
         # -----------------------------
         # CONTROL PARAMETERS
         # -----------------------------
-        self.target_heading = 0.0
-
+        self.desired_yaw = 0.0
         self.kp = 0.6
         self.kd = 0.15
-
-        # -----------------------------
-        # FILTERING
-        # -----------------------------
-        self.alpha = 0.15
-        self.yaw_filtered = 0.0
+        self.terrain = "dry_sand"
 
         # -----------------------------
         # STATE
@@ -46,7 +40,21 @@ class HeadingController(Node):
         self.prev_error = 0.0
         self.prev_time = self.get_clock().now()
 
-        self.get_logger().info("Stable Heading Controller Started")
+        self.get_logger().info("Heading Controller Started")
+
+    # -----------------------------
+    # CALLBACKS
+    # -----------------------------
+    def terrain_cb(self, msg):
+        self.terrain = msg.data
+
+    def desired_yaw_cb(self, msg):
+        self.desired_yaw = msg.data
+
+    def gains_cb(self, msg):
+        if len(msg.data) >= 2:
+            self.kp = msg.data[0]
+            self.kd = msg.data[1]
 
     # -----------------------------
     # UTIL: ANGLE WRAP
@@ -61,7 +69,7 @@ class HeadingController(Node):
     # -----------------------------
     # MAIN CALLBACK
     # -----------------------------
-    def callback(self, msg):
+    def sensor_cb(self, msg):
 
         # -------------------------
         # 1. TIME STEP
@@ -74,64 +82,54 @@ class HeadingController(Node):
             dt = 0.05
 
         # -------------------------
-        # 2. FILTER YAW
+        # 2. ERROR (shortest path)
         # -------------------------
-        raw_yaw = msg.yaw
-
-        self.yaw_filtered = (
-            self.alpha * raw_yaw +
-            (1.0 - self.alpha) * self.yaw_filtered
-        )
+        error = self.wrap_angle(self.desired_yaw - msg.yaw)
 
         # -------------------------
-        # 3. ERROR (shortest path)
-        # -------------------------
-        error = self.wrap_angle(self.target_heading - self.yaw_filtered)
-
-        # -------------------------
-        # 4. DERIVATIVE (dt-aware)
+        # 3. DERIVATIVE (dt-aware)
         # -------------------------
         derivative = (error - self.prev_error) / dt
         self.prev_error = error
 
         # -------------------------
-        # 5. PD CONTROL
+        # 4. PD CONTROL
         # -------------------------
         control = self.kp * error + self.kd * derivative
 
         # -------------------------
-        # 6. SATURATION
+        # 5. SATURATION
         # -------------------------
         control = max(-1.0, min(1.0, control))
 
         # -------------------------
-        # 7. MOTOR MIXING
-        # -------------------------
-        base = 0.5
-
-        left = base - control
-        right = base + control
-
-        left = max(0.0, min(1.0, left))
-        right = max(0.0, min(1.0, right))
-
-        # -------------------------
-        # 8. PUBLISH PWM
+        # 6. MOTOR MIXING
         # -------------------------
         pwm_msg = PWM()
-        pwm_msg.left_pwm = float(left)
-        pwm_msg.right_pwm = float(right)
 
+        if self.terrain == "wet_sand":
+            # screw mode: both sides scaled around midpoint
+            pwm_msg.left_pwm = float(SCREW_MIDPOINT - control * SCREW_HALF_RANGE)
+            pwm_msg.right_pwm = float(SCREW_MIDPOINT + control * SCREW_HALF_RANGE)
+        else:
+            # crab mode: right side constant, left side adjusted by PD
+            pwm_msg.right_pwm = float(CRAB_RIGHT_CONSTANT)
+            pwm_msg.left_pwm = float(CRAB_MIDPOINT + control * CRAB_HALF_RANGE)
+
+        # -------------------------
+        # 7. PUBLISH PWM
+        # -------------------------
         self.publisher.publish(pwm_msg)
 
         # -------------------------
         # DEBUG
         # -------------------------
         self.get_logger().info(
-            f"yaw={self.yaw_filtered:.2f} "
+            f"yaw={msg.yaw:.2f} "
             f"err={error:.2f} "
             f"ctrl={control:.2f} "
-            f"dt={dt:.3f}"
+            f"dt={dt:.3f} "
+            f"mode={self.terrain}"
         )
 
 
