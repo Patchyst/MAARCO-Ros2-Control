@@ -15,9 +15,8 @@ class SetGains(py_trees.behaviour.Behaviour):
         msg = Float64MultiArray()
         msg.data = [self.kp, self.kd]
         self.ros_node.gains_pub.publish(msg)
-        self.logger.info(f"Published gains kp={self.kp} kd={self.kd}")
+        self.logger.info(f"Yaw Control. Published gains kp={self.kp} kd={self.kd}")
         return py_trees.common.Status.SUCCESS
-
 
 # Returns RUNNING while in progress, SUCCESS when the attempt is done.
 # update method will contain recovery logic
@@ -48,7 +47,6 @@ class TryAltLocomotion(py_trees.behaviour.Behaviour):
         # make sure to terminate locomotion method when this method is reached, as we are now "unstuck"
         self.logger.info(f"Locomotion terminated with status: {new_status}")
 
-
 # Get help from operator
 # Returns RUNNING indefinitely to block the tree.
 class CallForHelp(py_trees.behaviour.Behaviour):
@@ -58,7 +56,7 @@ class CallForHelp(py_trees.behaviour.Behaviour):
 
     def initialise(self):
         # TODO: insert code for calling help from operator  
-        self.ros_node.needs_help = True
+        self.needs_help = True
         self.logger.warning("STUCK: calling for help.")
 
     def update(self):
@@ -66,9 +64,8 @@ class CallForHelp(py_trees.behaviour.Behaviour):
         return py_trees.common.Status.RUNNING
 
     def terminate(self, new_status):
-        self.ros_node.needs_help = False
-        self.logger.info(f"CallForHelp terminated with status: {new_status}")
-
+        self.needs_help = False
+        self.logger.info(f"Calling for help terminated with status: {new_status}")
 
 class SetModeCrab(py_trees.behaviour.Behaviour):
     def __init__(self, ros_node, name="SetModeCrab"):
@@ -80,7 +77,6 @@ class SetModeCrab(py_trees.behaviour.Behaviour):
         self.logger.info("Mode set to crab crawl. Desired yaw: 90")
         self.ros_node.desired_yaw = 90.0
         return py_trees.common.Status.SUCCESS
-
 
 class SetModeScrew(py_trees.behaviour.Behaviour):
     def __init__(self, ros_node, name="SetModeScrew"):
