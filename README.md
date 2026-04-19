@@ -28,6 +28,12 @@ To run the behavior tree node:
 ```bash
 ros2 run maarco_bt heading_bt_node
 ```
+To run the pd controller, motor driver, and serial reader node. Run this launch file:
+```
+ros2 launch maarco_bt maarco_control.launch.py
+```
+
+### To run them individually:
 To run the pd controller:
 ```bash
 ros2 run heading_controller heading_controller
