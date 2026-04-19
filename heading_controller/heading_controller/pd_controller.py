@@ -4,12 +4,15 @@ from serial_interfaces.msg import SensorData
 from std_msgs.msg import Float64, Float64MultiArray, String
 from motor_interfaces.msg import PWM
 
-SCREW_MIDPOINT = 1500
-SCREW_HALF_RANGE = 250
+SCREW_START = 1500
+SCREW_RANGE = 400
+SCREW_LEFT_CONSTANT = 1350
 
-CRAB_MIDPOINT = 1300
-CRAB_HALF_RANGE = 200
-CRAB_RIGHT_CONSTANT = 1100
+CRAB_START = 1500
+CRAB_RANGE = 400
+CRAB_LEFT_CONSTANT = 1350
+
+
 
 class HeadingController(Node):
 
@@ -100,7 +103,7 @@ class HeadingController(Node):
         # -------------------------
         # 5. SATURATION
         # -------------------------
-        control = max(-1.0, min(1.0, control))
+        control = min(1.0, max(0.0, control))
 
         # -------------------------
         # 6. MOTOR MIXING
@@ -109,12 +112,13 @@ class HeadingController(Node):
 
         if self.terrain == "wet_sand":
             # screw mode: both sides scaled around midpoint
-            pwm_msg.left_pwm = float(SCREW_MIDPOINT - control * SCREW_HALF_RANGE)
-            pwm_msg.right_pwm = float(SCREW_MIDPOINT + control * SCREW_HALF_RANGE)
+            pwm_msg.left_pwm = float(SCREW_LEFT_CONSTANT)
+            pwm_msg.right_pwm = float(SCREW_START + control * SCREW_RANGE)
         else:
             # crab mode: right side constant, left side adjusted by PD
-            pwm_msg.right_pwm = float(CRAB_RIGHT_CONSTANT)
-            pwm_msg.left_pwm = float(CRAB_MIDPOINT + control * CRAB_HALF_RANGE)
+            pwm_msg.left_pwm = float(CRAB_LEFT_CONSTANT)
+            pwm_msg.right_pwm = float(CRAB_START - control * CRAB_RANGE)
+            
 
         # -------------------------
         # 7. PUBLISH PWM
